@@ -1,7 +1,49 @@
 AWSTemplateFormatVersion: 2010-09-09
 
-Description: |
+Description: >
+  MyProject
 
 Resources:
-        
-Outputs:
+  HasanProjectInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0c101f26f147fa7fd
+      InstanceType: t2.micro
+      KeyName: hello_key
+
+      HasanTemplate:
+        Type: AWS::EC2::LaunchTemplate
+        Properties:
+          LaunchTemplateData:
+            - /#! /bin/bash
+              dnf update -y
+              dnf install nginx -y
+              systemctl start nginx
+              cd /usr/share/nginx/html
+              chmod -R 777 /usr/share/nginx/html
+              rm index.html
+              wget https://raw.githubusercontent.com/Hsnmrhn/Project101/main/static-web/index.html
+              wget https://raw.githubusercontent.com/Hsnmrhn/Project101/main/static-web/cat0.jpg
+              wget https://raw.githubusercontent.com/Hsnmrhn/Project101/main/static-web/cat1.jpg
+              wget https://raw.githubusercontent.com/Hsnmrhn/Project101/main/static-web/cat2.jpg
+              systemctl restart nginx
+              systemctl enable nginx
+          # LaunchTemplateId: lt-0428a474db5f3d213
+          # LaunchTemplateName: ProjectTemplate
+          # Version: 1
+
+      SecurityGroups:
+        - !Ref HasanSecGroup
+      Tags:
+        - Key: Name
+          Value: HasanInstance
+
+  HasanSecGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allows SSH # Required
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
