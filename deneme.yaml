@@ -1,0 +1,16 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Launches an EC2 instance using an existing Launch Template
+
+Resources:
+  MyEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: lt-0428a474db5f3d213
+        Version: 4
+        # If you want to specify a specific version of the Launch Template, you can use:
+
+      # Additional properties for the instance
+      Tags:
+        - Key: Name
+          Value: MyInstance
