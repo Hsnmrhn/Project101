@@ -1,49 +1,80 @@
 AWSTemplateFormatVersion: 2010-09-09
 
-Description: >
-  MyProject
+Description: |
+  This CloudFormation Template was written for running Kittens Carousel Static Website on EC2.
+  Kittens Carousel Static Website will be deployed on Amazon Linux 2023 EC2 Instance with custom
+  security group which allows http connections on port 80 and ssh port 22 from anywhere. Kittens Carousel Static Website
+  is downloaded from my Public Github repository, then deployed on Apache Web Server.
+
+Parameters:
+  imageID:
+    Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    Default: "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64"
+
+  instanceType:
+    Description: Select The Instance Type.
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t3.micro
+      - t2.nano
+
+  myKeyName:
+    Description: Select KeyPair
+    Type: AWS::EC2::KeyPair::KeyName
+
+  tagKeyParam:
+    Description: type your key for ec2 name
+    Type: String
+    NoEcho: true
 
 Resources:
-  HasanProjectInstance:
+  myWebServer:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0c101f26f147fa7fd
-      InstanceType: t2.micro
-      KeyName: hello_key
+      ImageId: !Ref imageID
+      InstanceType: !Ref instanceType
+      KeyName: !Ref myKeyName
+      SecurityGroupIds:
+        - !Ref mySecGrp # !GetAtt mySecGrp.GroupId
 
-      HasanTemplate:
-        Type: AWS::EC2::LaunchTemplate
-        Properties:
-          LaunchTemplateData:
-            - /#! /bin/bash
-              dnf update -y
-              dnf install nginx -y
-              systemctl start nginx
-              cd /usr/share/nginx/html
-              chmod -R 777 /usr/share/nginx/html
-              rm index.html
-              wget https://raw.githubusercontent.com/Hsnmrhn/Project101/main/static-web/index.html
-              wget https://raw.githubusercontent.com/Hsnmrhn/Project101/main/static-web/cat0.jpg
-              wget https://raw.githubusercontent.com/Hsnmrhn/Project101/main/static-web/cat1.jpg
-              wget https://raw.githubusercontent.com/Hsnmrhn/Project101/main/static-web/cat2.jpg
-              systemctl restart nginx
-              systemctl enable nginx
-          # LaunchTemplateId: lt-0428a474db5f3d213
-          # LaunchTemplateName: ProjectTemplate
-          # Version: 1
-
-      SecurityGroups:
-        - !Ref HasanSecGroup
       Tags:
-        - Key: Name
-          Value: HasanInstance
+        - Key: !Ref tagKeyParam
+          Value: !Sub ${AWS::StackName}
 
-  HasanSecGroup:
+      UserData: !Base64 |
+        #! /bin/bash
+        dnf update -y
+        dnf install httpd -y
+        FOLDER="https://raw.githubusercontent.com/Hsnmrhn/Project101/main/static-web/"
+        cd /var/www/html
+        wget ${FOLDER}/index.html
+        wget ${FOLDER}/cat0.jpg
+        wget ${FOLDER}/cat1.jpg
+        wget ${FOLDER}/cat2.jpg
+        wget ${FOLDER}/cat3.png
+        systemctl start httpd
+        systemctl enable httpd
+
+  mySecGrp:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allows SSH # Required
+      GroupDescription: Ssh and http # Required
+      GroupName: Hasan_project101
       SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
+
+Outputs:
+  webSiteUrl:
+    Description: URL of the site.
+    Value: !Sub
+      - http://${PublicDNS}
+      - PublicDNS: !GetAtt myWebServer.PublicDnsName
